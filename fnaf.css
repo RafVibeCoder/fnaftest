@@ -1,0 +1,205 @@
+/* FNAF: House of Predators — style.css */
+
+/* ===== GLOBAL ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #000;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* ===== HUD ===== */
+#hud {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+  z-index: 20;
+}
+
+#hud div {
+  margin-bottom: 4px;
+}
+
+#hud div:last-child {
+  margin-bottom: 0;
+}
+
+#state {
+  font-weight: bold;
+  color: #ff4444;
+}
+
+#currency {
+  color: #ffd700;
+}
+
+#battery {
+  color: #66ff99;
+}
+
+/* ===== LOCK MESSAGE ===== */
+#lockMsg {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 20;
+}
+
+/* ===== VIGNETTE / OVERLAY ===== */
+#vignette {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center,
+    rgba(0, 0, 0, 0) 40%,
+    rgba(0, 0, 0, 0.7) 100%);
+  z-index: 10;
+}
+
+/* ===== DAMAGE / FEAR FLASH ===== */
+#screenFlash {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 0, 0, 0.25);
+  opacity: 0;
+  z-index: 15;
+  transition: opacity 0.2s ease-out;
+}
+
+/* ===== JUMPSCARE OVERLAY ===== */
+#jumpscareOverlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff0000;
+  font-size: 32px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  transition: opacity 0.25s ease-out;
+}
+
+/* ===== TITLE / NIGHT INTRO ===== */
+#titleCard {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 25;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease-out;
+}
+
+#titleCard h1 {
+  font-size: 40px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+#titleCard p {
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+/* ===== HUD WARNING STATES ===== */
+.battery-low #battery {
+  color: #ff9933;
+  animation: batteryPulse 0.8s infinite;
+}
+
+.battery-dead #battery {
+  color: #ff0000;
+  animation: batteryPulse 0.4s infinite;
+}
+
+@keyframes batteryPulse {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.2; }
+  100% { opacity: 1; }
+}
+
+/* ===== VHS / NOISE EFFECT (optional) ===== */
+#noiseOverlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background-image: url("assets/noise.png"); /* optional */
+  opacity: 0.12;
+  mix-blend-mode: screen;
+  z-index: 12;
+}
+
+/* ===== CURSOR HINT ===== */
+body:not(.locked) #lockMsg {
+  opacity: 1;
+}
+
+body.locked #lockMsg {
+  opacity: 0;
+}
+
+/* ===== SIMPLE MENU (if you add one later) ===== */
+#mainMenu {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, #111 0%, #000 70%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  color: #fff;
+}
+
+#mainMenu h1 {
+  font-size: 36px;
+  margin-bottom: 20px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+#mainMenu button {
+  background: #111;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 10px 18px;
+  margin: 6px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+#mainMenu button:hover {
+  background: #222;
+  border-color: #888;
+}
