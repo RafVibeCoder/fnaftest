@@ -1,46 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>FNAF: House of Predators</title>
-  <style>
-    body { margin: 0; overflow: hidden; background: #000; }
-    #hud {
-      position: fixed; top: 10px; left: 10px;
-      color: #fff; font-family: Arial, sans-serif; font-size: 14px;
-      background: rgba(0,0,0,0.6); padding: 8px 12px; border-radius: 6px;
-      z-index: 10;
-    }
-    #lockMsg {
-      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-      color: #fff; font-family: Arial, sans-serif; font-size: 14px;
-      background: rgba(0,0,0,0.6); padding: 6px 10px; border-radius: 6px;
-      z-index: 10;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+
+  <!-- HUD -->
   <div id="hud">
     <div>State: <span id="state">Exploring</span></div>
     <div>Currency: <span id="currency">0</span></div>
-    <div>Tip: Click to lock mouse, WASD to move, E to hide</div>
+    <div>Flashlight: <span id="battery">100%</span></div>
+    <div>Tip: Click to lock mouse, WASD move, F flashlight, E hide</div>
   </div>
+
+  <!-- Mouse lock hint -->
   <div id="lockMsg">Click anywhere to enable mouse‑look</div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Crosshair -->
+  <div id="crosshair"></div>
 
+  <!-- Vignette / atmosphere -->
+  <div id="vignette"></div>
+
+  <!-- Screen flash (damage / fear) -->
+  <div id="screenFlash"></div>
+
+  <!-- Jumpscare overlay -->
+  <div id="jumpscareOverlay">YOU DIED</div>
+
+  <!-- Title card / night intro -->
+  <div id="titleCard">
+    <h1>HOUSE OF PREDATORS</h1>
+    <p>Night 1 – Scraptrap is hunting.</p>
+  </div>
+
+  <!-- Optional noise overlay (if you add texture) -->
+  <div id="noiseOverlay"></div>
+
+  <!-- Main menu (hook for later) -->
+  <div id="mainMenu">
+    <h1>HOUSE OF PREDATORS</h1>
+    <button id="btnStart">Start Night</button>
+    <button id="btnQuit">Quit</button>
+  </div>
+
+  <!-- 3D canvas is created by Three.js in game.js -->
+
+  <!-- Game logic -->
   <script>
-    // ===== CORE THREE.JS SETUP =====
+    // Basic Three.js setup here so game.js can assume scene/camera/renderer exist
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
 
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 1.7, 0);
+    const camera = new THREE.PerspectiveCamera(
+      70,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      100
+    );
+    camera.position.set(0, 1.7, 2);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // ===== LIGHTING =====
+    // Lights
     const ambient = new THREE.AmbientLight(0x202020);
     scene.add(ambient);
 
@@ -52,369 +82,19 @@
     redLight.position.set(4, 2.5, 4);
     scene.add(redLight);
 
-    // ===== HUD ELEMENTS =====
-    const stateText = document.getElementById('state');
-    const currencyText = document.getElementById('currency');
-    const lockMsg = document.getElementById('lockMsg');
-
-    // ===== INPUT =====
-    const keys = {};
-    let mouseLocked = false;
-    let yaw = 0;
-    let pitch = 0;
-
-    window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-    window.addEventListener('keyup',   e => keys[e.key.toLowerCase()] = false);
-
-    renderer.domElement.addEventListener('click', () => {
-      if (renderer.domElement.requestPointerLock) {
-        renderer.domElement.requestPointerLock();
-      }
-    });
-
-    document.addEventListener('pointerlockchange', () => {
-      mouseLocked = (document.pointerLockElement === renderer.domElement);
-      lockMsg.style.display = mouseLocked ? 'none' : 'block';
-    });
-
-    document.addEventListener('mousemove', e => {
-      if (!mouseLocked) return;
-      const sensitivity = 0.002;
-      yaw   -= e.movementX * sensitivity;
-      pitch -= e.movementY * sensitivity;
-      const limit = Math.PI / 2 - 0.1;
-      if (pitch > limit) pitch = limit;
-      if (pitch < -limit) pitch = -limit;
-    });
-
-    // ===== SIMPLE 3D VECTORS =====
-    function forwardVector(){
-      return new THREE.Vector3(
-        Math.sin(yaw) * Math.cos(pitch),
-        Math.sin(pitch),
-        Math.cos(yaw) * Math.cos(pitch)
-      );
-    }
-
-    function rightVector(){
-      return new THREE.Vector3(
-        Math.cos(yaw),
-        0,
-        -Math.sin(yaw)
-      );
-    }
-
-    // ===== HOUSE GEOMETRY =====
-    const house = new THREE.Group();
-    scene.add(house);
-
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x080808 });
-    const doorMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-
-    function makeWall(w, h, d, x, y, z){
-      const geo = new THREE.BoxGeometry(w, h, d);
-      const mesh = new THREE.Mesh(geo, wallMat);
-      mesh.position.set(x, y, z);
-      mesh.receiveShadow = true;
-      mesh.castShadow = true;
-      house.add(mesh);
-      return mesh;
-    }
-
-    function makeFloor(w, d, x, y, z){
-      const geo = new THREE.BoxGeometry(w, 0.1, d);
-      const mesh = new THREE.Mesh(geo, floorMat);
-      mesh.position.set(x, y, z);
-      mesh.receiveShadow = true;
-      house.add(mesh);
-      return mesh;
-    }
-
-    // Main floor
-    makeFloor(12, 16, 0, 0, 0);
-
-    // Walls (simple rectangular house with a hallway)
-    makeWall(12, 3, 0.2, 0, 1.5, -8);  // back
-    makeWall(12, 3, 0.2, 0, 1.5, 8);   // front
-    makeWall(0.2, 3, 16, -6, 1.5, 0);  // left
-    makeWall(0.2, 3, 16, 6, 1.5, 0);   // right
-
-    // Interior walls to form rooms
-    makeWall(0.2, 3, 8, -2, 1.5, -4);  // between living room / hallway
-    makeWall(0.2, 3, 8, 2, 1.5, 4);    // between bedroom / hallway
-
-    // Doors (visual only for now)
-    const doorGeo = new THREE.BoxGeometry(1, 2.2, 0.1);
-    function makeDoor(x,y,z){
-      const door = new THREE.Mesh(doorGeo, doorMat);
-      door.position.set(x,y,z);
-      house.add(door);
-      return door;
-    }
-    makeDoor(-2, 1.1, -4); // living room door
-    makeDoor(2, 1.1, 4);   // bedroom door
-
-    // ===== HIDING SPOTS =====
-    const hidingSpots = [];
-    const hideMat = new THREE.MeshStandardMaterial({ color: 0x222244 });
-
-    function makeHidingSpot(w,h,d,x,y,z){
-      const geo = new THREE.BoxGeometry(w,h,d);
-      const mesh = new THREE.Mesh(geo, hideMat);
-      mesh.position.set(x,y,z);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      house.add(mesh);
-      hidingSpots.push(mesh);
-      return mesh;
-    }
-
-    // Closet, bed, locker, cabinet
-    makeHidingSpot(1.2, 2.4, 0.8, -4.5, 1.2, -6); // closet
-    makeHidingSpot(2.0, 0.8, 1.4, 4.0, 0.4, 6);   // bed
-    makeHidingSpot(1.0, 2.0, 0.8, -4.5, 1.0, 6);  // locker
-    makeHidingSpot(1.4, 1.6, 0.8, 4.5, 0.8, -6);  // cabinet
-
-    // ===== CURRENCY OBJECTS =====
-    const currencyObjects = [];
-    let currency = 0;
-
-    const scrapMat = new THREE.MeshStandardMaterial({ color: 0xffd700 });
-    function makeScrap(x,y,z){
-      const geo = new THREE.BoxGeometry(0.3,0.3,0.3);
-      const mesh = new THREE.Mesh(geo, scrapMat);
-      mesh.position.set(x,y,z);
-      mesh.castShadow = true;
-      house.add(mesh);
-      currencyObjects.push(mesh);
-      return mesh;
-    }
-
-    makeScrap(-3, 0.2, -3);
-    makeScrap(3, 0.2, -5);
-    makeScrap(-1, 0.2, 5);
-    makeScrap(4, 0.2, 2);
-
-    // ===== PLAYER STATE =====
-    const player = {
-      pos: new THREE.Vector3(0, 1.7, 2),
-      speed: 0.06,
-      hiding: false,
-      alive: true
-    };
-
-    // ===== ANIMATRONICS =====
-    const animatronics = [];
-
-    function makeAnimatronic(name, x,y,z, color, lines){
-      const group = new THREE.Group();
-
-      const bodyMat = new THREE.MeshStandardMaterial({ color });
-      const headMat = new THREE.MeshStandardMaterial({ color: 0x550000 });
-
-      // Body
-      const bodyGeo = new THREE.BoxGeometry(0.9, 1.6, 0.6);
-      const body = new THREE.Mesh(bodyGeo, bodyMat);
-      body.position.set(0, 1.0, 0);
-      body.castShadow = true;
-      body.receiveShadow = true;
-      group.add(body);
-
-      // Head
-      const headGeo = new THREE.BoxGeometry(0.7, 0.7, 0.6);
-      const head = new THREE.Mesh(headGeo, headMat);
-      head.position.set(0, 2.0, 0);
-      head.castShadow = true;
-      head.receiveShadow = true;
-      group.add(head);
-
-      // Arms
-      const armGeo = new THREE.BoxGeometry(0.2, 1.0, 0.2);
-      const armL = new THREE.Mesh(armGeo, bodyMat);
-      armL.position.set(-0.6, 1.0, 0);
-      const armR = new THREE.Mesh(armGeo, bodyMat);
-      armR.position.set(0.6, 1.0, 0);
-      group.add(armL, armR);
-
-      // Legs
-      const legGeo = new THREE.BoxGeometry(0.25, 1.0, 0.25);
-      const legL = new THREE.Mesh(legGeo, bodyMat);
-      legL.position.set(-0.25, 0.0, 0);
-      const legR = new THREE.Mesh(legGeo, bodyMat);
-      legR.position.set(0.25, 0.0, 0);
-      group.add(legL, legR);
-
-      group.position.set(x,y,z);
-      scene.add(group);
-
-      const anim = {
-        name,
-        group,
-        speed: 0.03,
-        state: 'patrol',
-        lineSearch: lines.search,
-        lineSpotted: lines.spotted,
-        talkCooldown: 0,
-        patrolPoints: [
-          new THREE.Vector3(x, y, z),
-          new THREE.Vector3(x+4, y, z+4),
-          new THREE.Vector3(x-4, y, z-4)
-        ],
-        patrolIndex: 0
-      };
-
-      animatronics.push(anim);
-      return anim;
-    }
-
-    makeAnimatronic('Molten Freddy', -3, 0, -5, 0x330000, {
-      search: 'I hear you breathing...',
-      spotted: 'THERE YOU ARE.'
-    });
-
-    makeAnimatronic('Scraptrap', 4, 0, -3, 0x222200, {
-      search: 'You can’t hide forever.',
-      spotted: 'Found you.'
-    });
-
-    // ===== COLLISION (HOUSE BOUNDS) =====
-    function insideBounds(pos){
-      return (pos.x > -6 && pos.x < 6 && pos.z > -8 && pos.z < 8);
-    }
-
-    // ===== PLAYER UPDATE =====
-    function updatePlayer(){
-      if (!player.alive) return;
-
-      const fwd = forwardVector();
-      const right = rightVector();
-      fwd.y = 0; right.y = 0;
-      fwd.normalize(); right.normalize();
-
-      const move = new THREE.Vector3();
-      if (keys['w']) move.add(fwd);
-      if (keys['s']) move.sub(fwd);
-      if (keys['a']) move.sub(right);
-      if (keys['d']) move.add(right);
-
-      if (move.lengthSq() > 0){
-        move.normalize().multiplyScalar(player.speed);
-        const newPos = player.pos.clone().add(move);
-        if (insideBounds(newPos)){
-          player.pos.copy(newPos);
-        }
-      }
-
-      // Hiding toggle
-      if (keys['e']){
-        let canHide = false;
-        for (const spot of hidingSpots){
-          const dist = spot.position.distanceTo(player.pos);
-          if (dist < 1.5){
-            canHide = true;
-            break;
-          }
-        }
-        player.hiding = canHide;
-      } else {
-        player.hiding = false;
-      }
-
-      stateText.textContent = player.alive
-        ? (player.hiding ? 'Hiding' : 'Exploring')
-        : stateText.textContent;
-
-      camera.position.copy(player.pos);
-      const lookDir = forwardVector();
-      const target = player.pos.clone().add(lookDir);
-      camera.lookAt(target);
-    }
-
-    // ===== CURRENCY UPDATE =====
-    function updateCurrency(){
-      if (!player.alive) return;
-      for (const obj of currencyObjects){
-        if (!obj.visible) continue;
-        const dist = obj.position.distanceTo(player.pos);
-        if (dist < 1.0){
-          obj.visible = false;
-          currency += 5;
-          currencyText.textContent = currency;
-        }
-      }
-    }
-
-    // ===== ANIMATRONIC AI =====
-    function updateAnimatronics(){
-      for (const a of animatronics){
-        const dist = a.group.position.distanceTo(player.pos);
-        const detectionRange = player.hiding ? 4 : 9;
-        const chaseRange = 3;
-
-        if (dist < detectionRange){
-          if (dist < chaseRange){
-            a.state = 'chase';
-          } else {
-            a.state = 'search';
-          }
-        } else {
-          a.state = 'patrol';
-        }
-
-        let target = a.patrolPoints[a.patrolIndex % a.patrolPoints.length];
-        if (a.state === 'search' || a.state === 'chase'){
-          target = player.pos;
-        }
-
-        const dir = target.clone().sub(a.group.position);
-        if (dir.lengthSq() > 0.0001){
-          dir.normalize();
-          const speedMul = a.state === 'chase' ? 1.6 : 1.0;
-          dir.multiplyScalar(a.speed * speedMul);
-          a.group.position.add(dir);
-        }
-
-        if (a.state === 'patrol'){
-          if (a.group.position.distanceTo(target) < 0.5){
-            a.patrolIndex++;
-          }
-        }
-
-        if (a.talkCooldown > 0) a.talkCooldown--;
-
-        if (a.state === 'search' && a.talkCooldown <= 0){
-          console.log(a.name + ': ' + a.lineSearch);
-          a.talkCooldown = 180;
-        }
-        if (a.state === 'chase' && a.talkCooldown <= 0){
-          console.log(a.name + ': ' + a.lineSpotted);
-          a.talkCooldown = 240;
-        }
-
-        if (dist < 1.0 && !player.hiding && player.alive){
-          player.alive = false;
-          stateText.textContent = 'Caught by ' + a.name;
-        }
-      }
-    }
-
-    // ===== MAIN LOOP =====
-    function animate(){
-      requestAnimationFrame(animate);
-      updatePlayer();
-      updateCurrency();
-      updateAnimatronics();
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    // ===== RESIZE =====
-    window.addEventListener('resize', () => {
+    window.addEventListener("resize", () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
+    // Mark body as locked/unlocked for CSS
+    document.addEventListener("pointerlockchange", () => {
+      const locked = (document.pointerLockElement === renderer.domElement);
+      document.body.classList.toggle("locked", locked);
+    });
   </script>
+  <script src="game.js"></script>
 </body>
 </html>
+
