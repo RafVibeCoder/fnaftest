@@ -4,11 +4,21 @@
   <meta charset="UTF-8">
   <title>FNAF: House of Predators</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Styles -->
-  <link rel="stylesheet" href="style.css">
-  <!-- Three.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="fnaf.css">
+
+  <!-- THREE.JS CORE -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+
+  <!-- THREE.JS POSTPROCESSING (Bloom, Vignette, etc.) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/shaders/VignetteShader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/ShaderPass.js"></script>
 </head>
+
 <body>
 
   <!-- HUD -->
@@ -19,82 +29,40 @@
     <div>Tip: Click to lock mouse, WASD move, F flashlight, E hide</div>
   </div>
 
-  <!-- Mouse lock hint -->
+  <!-- Mouse Lock Message -->
   <div id="lockMsg">Click anywhere to enable mouse‑look</div>
 
   <!-- Crosshair -->
   <div id="crosshair"></div>
 
-  <!-- Vignette / atmosphere -->
+  <!-- Vignette -->
   <div id="vignette"></div>
 
-  <!-- Screen flash (damage / fear) -->
+  <!-- Damage Flash -->
   <div id="screenFlash"></div>
 
-  <!-- Jumpscare overlay -->
+  <!-- Jumpscare Overlay -->
   <div id="jumpscareOverlay">YOU DIED</div>
 
-  <!-- Title card / night intro -->
+  <!-- Title Card -->
   <div id="titleCard">
     <h1>HOUSE OF PREDATORS</h1>
     <p>Night 1 – Scraptrap is hunting.</p>
   </div>
 
-  <!-- Optional noise overlay (if you add texture) -->
+  <!-- VHS Noise -->
   <div id="noiseOverlay"></div>
 
-  <!-- Main menu (hook for later) -->
+  <!-- Main Menu -->
   <div id="mainMenu">
     <h1>HOUSE OF PREDATORS</h1>
     <button id="btnStart">Start Night</button>
     <button id="btnQuit">Quit</button>
   </div>
 
-  <!-- 3D canvas is created by Three.js in game.js -->
-
-  <!-- Game logic -->
-  <script>
-    // Basic Three.js setup here so game.js can assume scene/camera/renderer exist
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-
-    const camera = new THREE.PerspectiveCamera(
-      70,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      100
-    );
-    camera.position.set(0, 1.7, 2);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    // Lights
-    const ambient = new THREE.AmbientLight(0x202020);
-    scene.add(ambient);
-
-    const mainLight = new THREE.PointLight(0xfff2e0, 1.2, 25);
-    mainLight.position.set(0, 3, -4);
-    scene.add(mainLight);
-
-    const redLight = new THREE.PointLight(0xff0000, 0.7, 15);
-    redLight.position.set(4, 2.5, 4);
-    scene.add(redLight);
-
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    // Mark body as locked/unlocked for CSS
-    document.addEventListener("pointerlockchange", () => {
-      const locked = (document.pointerLockElement === renderer.domElement);
-      document.body.classList.toggle("locked", locked);
-    });
-  </script>
+  <!-- GAME ENGINE -->
   <script src="game.js"></script>
+
 </body>
 </html>
 
